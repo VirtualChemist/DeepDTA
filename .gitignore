@@ -1,0 +1,6 @@
+logs/
+source/__pycache__
+source/*.h5
+source/checkpoints/*.h5
+source/figures
+source/.ipynb_checkpoints

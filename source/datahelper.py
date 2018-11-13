@@ -6,6 +6,8 @@ import pickle
 import collections
 from collections import OrderedDict
 from matplotlib.pyplot import cm
+import pandas as pd
+import numpy as np
 #from keras.preprocessing.sequence import pad_sequences
 
 
@@ -161,5 +163,30 @@ class DataSet(object):
     return XD, XT, Y
 
 
+def get_DTC_train(data_file, max_smi_len, max_seq_len, with_label=True):
+    dtc_train = pd.read_csv(data_file)
+    dtc_train.drop('Unnamed: 0', axis=1, inplace=True)
+    for ind in dtc_train[dtc_train['smiles'].str.contains('\n')].index:
+        dtc_train.loc[ind, 'smiles'] = dtc_train.loc[ind, 'smiles'].split('\n')[0]
 
+    n_samples = dtc_train['smiles'].shape[0]
+    XD, XT = [1 for i in range(n_samples)], [1 for i in range(n_samples)]
 
+    for d in dtc_train['smiles'].unique():
+        labeled_smiles = label_smiles(d, max_smi_len, CHARISOSMISET)
+        indices = np.where(dtc_train['smiles']==d)[0]
+
+        for ind in indices:
+            XD[ind] = labeled_smiles
+
+    for t in dtc_train['fasta'].unique():
+        labeled_sequence = label_sequence(t, max_seq_len, CHARPROTSET)
+        indices = np.where(dtc_train['fasta']==t)[0]
+
+        for ind in indices:
+            XT[ind] = labeled_sequence
+
+    if with_label:
+        return XD, XT, dtc_train['value'].values
+    else:
+        return XD, XT

@@ -93,8 +93,8 @@ def build_combined_onehot(FLAGS, NUM_FILTERS, FILTER_LENGTH1, FILTER_LENGTH2):
     interactionModel.compile(optimizer='adam', loss='mean_squared_error', metrics=[cindex_score]) #, metrics=['cindex_score']
     
 
-    print(interactionModel.summary())
-    plot_model(interactionModel, to_file='figures/build_combined_onehot.png')
+    #print(interactionModel.summary())
+    #plot_model(interactionModel, to_file='figures/build_combined_onehot.png')
 
     return interactionModel
 
@@ -103,32 +103,38 @@ def build_combined_onehot(FLAGS, NUM_FILTERS, FILTER_LENGTH1, FILTER_LENGTH2):
 
 
 def build_combined_categorical(FLAGS, NUM_FILTERS, FILTER_LENGTH1, FILTER_LENGTH2):
-   
+
     XDinput = Input(shape=(FLAGS.max_smi_len,), dtype='int32') ### Buralar flagdan gelmeliii
     XTinput = Input(shape=(FLAGS.max_seq_len,), dtype='int32')
 
-    ### SMI_EMB_DINMS  FLAGS GELMELII 
-    encode_smiles = Embedding(input_dim=FLAGS.charsmiset_size+1, output_dim=128, input_length=FLAGS.max_smi_len)(XDinput) 
+    ### SMI_EMB_DINMS  FLAGS GELMELII
+    encode_smiles = Embedding(input_dim=FLAGS.charsmiset_size+1, output_dim=128, input_length=FLAGS.max_smi_len)(XDinput)
     encode_smiles = Conv1D(filters=NUM_FILTERS, kernel_size=FILTER_LENGTH1,  activation='relu', padding='valid',  strides=1)(encode_smiles)
-    encode_smiles = Conv1D(filters=NUM_FILTERS*2, kernel_size=FILTER_LENGTH1,  activation='relu', padding='valid',  strides=1)(encode_smiles)
-    encode_smiles = Conv1D(filters=NUM_FILTERS*3, kernel_size=FILTER_LENGTH1,  activation='relu', padding='valid',  strides=1)(encode_smiles)
+    encode_smiles = Conv1D(filters=NUM_FILTERS*2, kernel_size=int(FILTER_LENGTH1*1.5),  activation='relu', padding='valid',  strides=1)(encode_smiles)
+    encode_smiles = Conv1D(filters=NUM_FILTERS*3, kernel_size=FILTER_LENGTH1*3,  activation='relu', padding='valid',  strides=1)(encode_smiles)
+    encode_smiles = BatchNormalization()(encode_smiles)
     encode_smiles = GlobalMaxPooling1D()(encode_smiles)
 
 
     encode_protein = Embedding(input_dim=FLAGS.charseqset_size+1, output_dim=128, input_length=FLAGS.max_seq_len)(XTinput)
     encode_protein = Conv1D(filters=NUM_FILTERS, kernel_size=FILTER_LENGTH2,  activation='relu', padding='valid',  strides=1)(encode_protein)
-    encode_protein = Conv1D(filters=NUM_FILTERS*2, kernel_size=FILTER_LENGTH2,  activation='relu', padding='valid',  strides=1)(encode_protein)
-    encode_protein = Conv1D(filters=NUM_FILTERS*3, kernel_size=FILTER_LENGTH2,  activation='relu', padding='valid',  strides=1)(encode_protein)
+    encode_protein = Conv1D(filters=NUM_FILTERS*2, kernel_size=FILTER_LENGTH2*2,  activation='relu', padding='valid',  strides=1)(encode_protein)
+    encode_protein = Conv1D(filters=NUM_FILTERS*3, kernel_size=FILTER_LENGTH2*3,  activation='relu', padding='valid',  strides=1)(encode_protein)
+    #encode_protein = BatchNormalization()(encode_protein)
     encode_protein = GlobalMaxPooling1D()(encode_protein)
 
 
     encode_interaction = keras.layers.concatenate([encode_smiles, encode_protein], axis=-1) #merge.Add()([encode_smiles, encode_protein])
 
-    # Fully connected 
-    FC1 = Dense(1024, activation='relu')(encode_interaction)
+    # Fully connected
+    FC1 = BatchNormalization()(encode_interaction)
+    FC1 = Dense(1024, activation='relu')(FC1)
+
     FC2 = Dropout(0.1)(FC1)
+    FC2 = BatchNormalization()(FC2)
     FC2 = Dense(1024, activation='relu')(FC2)
     FC2 = Dropout(0.1)(FC2)
+    FC2 = BatchNormalization()(FC2)
     FC2 = Dense(512, activation='relu')(FC2)
 
 
@@ -138,12 +144,10 @@ def build_combined_categorical(FLAGS, NUM_FILTERS, FILTER_LENGTH1, FILTER_LENGTH
     interactionModel = Model(inputs=[XDinput, XTinput], outputs=[predictions])
 
     interactionModel.compile(optimizer='adam', loss='mean_squared_error', metrics=[cindex_score]) #, metrics=['cindex_score']
-    print(interactionModel.summary())
-    plot_model(interactionModel, to_file='figures/build_combined_categorical.png')
+    #print(interactionModel.summary())
+    #plot_model(interactionModel, to_file='figures/build_combined_categorical.png')
 
     return interactionModel
-
-
 
 def build_single_drug(FLAGS, NUM_FILTERS, FILTER_LENGTH1, FILTER_LENGTH2):
    
