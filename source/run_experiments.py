@@ -120,7 +120,7 @@ def build_combined_categorical(FLAGS, NUM_FILTERS, FILTER_LENGTH1, FILTER_LENGTH
     encode_protein = Conv1D(filters=NUM_FILTERS, kernel_size=FILTER_LENGTH2,  activation='relu', padding='valid',  strides=1)(encode_protein)
     encode_protein = Conv1D(filters=NUM_FILTERS*2, kernel_size=FILTER_LENGTH2*2,  activation='relu', padding='valid',  strides=1)(encode_protein)
     encode_protein = Conv1D(filters=NUM_FILTERS*3, kernel_size=FILTER_LENGTH2*3,  activation='relu', padding='valid',  strides=1)(encode_protein)
-    #encode_protein = BatchNormalization()(encode_protein)
+    encode_protein = BatchNormalization()(encode_protein)
     encode_protein = GlobalMaxPooling1D()(encode_protein)
 
 
