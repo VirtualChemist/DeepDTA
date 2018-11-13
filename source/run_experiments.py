@@ -112,15 +112,14 @@ def build_combined_categorical(FLAGS, NUM_FILTERS, FILTER_LENGTH1, FILTER_LENGTH
     encode_smiles = Conv1D(filters=NUM_FILTERS, kernel_size=FILTER_LENGTH1,  activation='relu', padding='valid',  strides=1)(encode_smiles)
     encode_smiles = Conv1D(filters=NUM_FILTERS*2, kernel_size=int(FILTER_LENGTH1*1.5),  activation='relu', padding='valid',  strides=1)(encode_smiles)
     encode_smiles = Conv1D(filters=NUM_FILTERS*3, kernel_size=FILTER_LENGTH1*3,  activation='relu', padding='valid',  strides=1)(encode_smiles)
-    encode_smiles = BatchNormalization()(encode_smiles)
+    #encode_smiles = BatchNormalization()(encode_smiles)
     encode_smiles = GlobalMaxPooling1D()(encode_smiles)
-
 
     encode_protein = Embedding(input_dim=FLAGS.charseqset_size+1, output_dim=128, input_length=FLAGS.max_seq_len)(XTinput)
     encode_protein = Conv1D(filters=NUM_FILTERS, kernel_size=FILTER_LENGTH2,  activation='relu', padding='valid',  strides=1)(encode_protein)
     encode_protein = Conv1D(filters=NUM_FILTERS*2, kernel_size=FILTER_LENGTH2*2,  activation='relu', padding='valid',  strides=1)(encode_protein)
     encode_protein = Conv1D(filters=NUM_FILTERS*3, kernel_size=FILTER_LENGTH2*3,  activation='relu', padding='valid',  strides=1)(encode_protein)
-    encode_protein = BatchNormalization()(encode_protein)
+    #encode_protein = BatchNormalization()(encode_protein)
     encode_protein = GlobalMaxPooling1D()(encode_protein)
 
 
