@@ -19,7 +19,7 @@ from sklearn.model_selection import ParameterGrid
 
 FLAGS = argparser()
 FLAGS.dataset_path= '../data/davis/'
-dtc_data_file = '../../data/dtc_for_deepDTA.csv'
+dtc_data_file = '../data/dtc_for_deepDTA.csv'
 FLAGS.charseqset_size = CHARPROTLEN 
 FLAGS.charsmiset_size = CHARISOSMILEN 
 

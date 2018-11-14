@@ -4,3 +4,4 @@ source/*.h5
 source/checkpoints/*.h5
 source/figures
 source/.ipynb_checkpoints
+source/*.pyc
