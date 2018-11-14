@@ -141,9 +141,12 @@ class DataSet(object):
 
     ligands = json.load(open(fpath+"ligands_iso.txt"), object_pairs_hook=OrderedDict)
     proteins = json.load(open(fpath+"proteins.txt"), object_pairs_hook=OrderedDict)
-
-    Y = pickle.load(open(fpath + "Y","rb"), encoding='latin1') ### TODO: read from raw
-
+    import sys
+    if sys.version_info >= (3, 0):
+        Y = pickle.load(open(fpath + "Y","rb"), encoding='latin1') ### TODO: read from raw
+    else:
+        Y = pickle.load(open(fpath + "Y","rb"))
+    
     XD = []
     XT = []
 
