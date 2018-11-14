@@ -9,7 +9,7 @@ from matplotlib.pyplot import cm
 import pandas as pd
 import numpy as np
 #from keras.preprocessing.sequence import pad_sequences
-
+from sklearn.model_selection import PredefinedSplit, KFold, ParameterGrid
 
 ## ######################## ##
 #
@@ -139,7 +139,7 @@ class DataSet(object):
 		
     print("Read %s start" % fpath)
 
-    ligands = json.load(open(fpath+"ligands_can.txt"), object_pairs_hook=OrderedDict)
+    ligands = json.load(open(fpath+"ligands_iso.txt"), object_pairs_hook=OrderedDict)
     proteins = json.load(open(fpath+"proteins.txt"), object_pairs_hook=OrderedDict)
 
     Y = pickle.load(open(fpath + "Y","rb"), encoding='latin1') ### TODO: read from raw
@@ -165,6 +165,9 @@ class DataSet(object):
 
 def get_DTC_train(data_file, max_smi_len, max_seq_len, with_label=True):
     dtc_train = pd.read_csv(data_file)
+    if with_label:
+        dtc_train = dtc_train.loc[dtc_train.groupby(['inchi_key', 'uniprot_id', 'value']).value.idxmin()]
+
     dtc_train.drop('Unnamed: 0', axis=1, inplace=True)
     for ind in dtc_train[dtc_train['smiles'].str.contains('\n')].index:
         dtc_train.loc[ind, 'smiles'] = dtc_train.loc[ind, 'smiles'].split('\n')[0]
@@ -190,3 +193,22 @@ def get_DTC_train(data_file, max_smi_len, max_seq_len, with_label=True):
         return XD, XT, dtc_train['value'].values
     else:
         return XD, XT
+
+    
+    
+def get_n_fold_by_drugs(all_drugs, n_splits=5):
+    unique_drugs = np.unique(all_drugs, axis=0)
+    test_folds = np.ones(all_drugs.shape[0])
+    kf = KFold(n_splits, random_state=15)
+    
+    j = 0
+    for _, validation_drugs in kf.split(np.arange(unique_drugs.shape[0])):
+        val_inds = []
+
+        for drug_ind in validation_drugs:
+            willbe_added =  list(np.where((~(all_drugs==unique_drugs[drug_ind, :])).sum(axis=1) == 0)[0])
+            val_inds +=   willbe_added
+        test_folds[val_inds] = j
+        j += 1
+    
+    return PredefinedSplit(test_folds)

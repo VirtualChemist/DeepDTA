@@ -26,7 +26,6 @@ from datahelper import *
 from itertools import product
 from arguments import argparser, logging
 
-import keras
 from keras.models import Model
 from keras.preprocessing import sequence
 from keras.models import Sequential, load_model
@@ -41,6 +40,7 @@ from keras.utils import plot_model
 from keras.layers import Bidirectional
 from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras import optimizers, layers
+from keras.utils import multi_gpu_model
 
 
 import sys, pickle, os
@@ -102,7 +102,7 @@ def build_combined_onehot(FLAGS, NUM_FILTERS, FILTER_LENGTH1, FILTER_LENGTH2):
 
 
 
-def build_combined_categorical(FLAGS, NUM_FILTERS, FILTER_LENGTH1, FILTER_LENGTH2):
+def build_combined_categorical(FLAGS, NUM_FILTERS, FILTER_LENGTH1, FILTER_LENGTH2, dropout=0.1, apply_bn=False):
 
     XDinput = Input(shape=(FLAGS.max_smi_len,), dtype='int32') ### Buralar flagdan gelmeliii
     XTinput = Input(shape=(FLAGS.max_seq_len,), dtype='int32')
@@ -122,20 +122,18 @@ def build_combined_categorical(FLAGS, NUM_FILTERS, FILTER_LENGTH1, FILTER_LENGTH
     #encode_protein = BatchNormalization()(encode_protein)
     encode_protein = GlobalMaxPooling1D()(encode_protein)
 
-
     encode_interaction = keras.layers.concatenate([encode_smiles, encode_protein], axis=-1) #merge.Add()([encode_smiles, encode_protein])
 
     # Fully connected
-    FC1 = BatchNormalization()(encode_interaction)
-    FC1 = Dense(1024, activation='relu')(FC1)
-
-    FC2 = Dropout(0.1)(FC1)
-    FC2 = BatchNormalization()(FC2)
+    FC1 = Dense(1024, activation='relu')(encode_interaction)
+    FC2 = Dropout(dropout)(FC1)
+    if apply_bn:
+        FC2 = BatchNormalization()(FC2)
     FC2 = Dense(1024, activation='relu')(FC2)
-    FC2 = Dropout(0.1)(FC2)
-    FC2 = BatchNormalization()(FC2)
+    FC2 = Dropout(dropout)(FC2)
+    if apply_bn:
+        FC2 = BatchNormalization()(FC2)
     FC2 = Dense(512, activation='relu')(FC2)
-
 
     # And add a logistic regression on top
     predictions = Dense(1, kernel_initializer='normal')(FC2) #OR no activation, rght now it's between 0-1, do I want this??? activation='sigmoid'
@@ -537,7 +535,15 @@ def run_regression( FLAGS ):
     experiment(FLAGS, perfmeasure, deepmethod)
 
 
+class CustomStopper(keras.callbacks.EarlyStopping):
+    def __init__(self, monitor='val_loss',
+             min_delta=0, patience=0, verbose=0, mode='auto', start_epoch = 100): # add argument for starting epoch
+        super(CustomStopper, self).__init__()
+        self.start_epoch = start_epoch
 
+    def on_epoch_end(self, epoch, logs=None):
+        if epoch > self.start_epoch:
+            super().on_epoch_end(epoch, logs)
 
 if __name__=="__main__":
     FLAGS = argparser()

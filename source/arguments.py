@@ -25,6 +25,24 @@ def argparser():
       help='Space seperated list of the number of motif filters corresponding to length list. (ex, --num_windows 100 200 100)'
   )
   parser.add_argument(
+      '--dropouts',
+      type=float,
+      nargs='+',
+      help='Space seperated list of the dropouts'
+  )
+  parser.add_argument(
+      '--bns',
+      type=bool,
+      nargs='+',
+      help='Space seperated list of the batch normalization'
+  )
+  parser.add_argument(
+      '--results_pickle',
+      type=str,
+      default='results.pkl',
+      help='Space seperated list of the batch normalization'
+  )
+  parser.add_argument(
       '--num_hidden',
       type=int,
       default=0,
