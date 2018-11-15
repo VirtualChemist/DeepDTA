@@ -168,10 +168,12 @@ class DataSet(object):
 
 def get_DTC_train(data_file, max_smi_len, max_seq_len, with_label=True):
     dtc_train = pd.read_csv(data_file)
-    if with_label:
-        dtc_train = dtc_train.loc[dtc_train.groupby(['inchi_key', 'uniprot_id', 'value']).value.idxmin()]
-
+    
     dtc_train.drop('Unnamed: 0', axis=1, inplace=True)
+    
+    if with_label:
+        dtc_train = dtc_train.groupby(['smiles', 'fasta']).aggregate(np.median).reset_index()
+
     for ind in dtc_train[dtc_train['smiles'].str.contains('\n')].index:
         dtc_train.loc[ind, 'smiles'] = dtc_train.loc[ind, 'smiles'].split('\n')[0]
 
@@ -197,7 +199,39 @@ def get_DTC_train(data_file, max_smi_len, max_seq_len, with_label=True):
     else:
         return XD, XT
 
-    
+def load_data(FLAGS):
+    dataset = DataSet( fpath = FLAGS.dataset_path,
+                      setting_no = FLAGS.problem_type,
+                      seqlen = FLAGS.max_seq_len,
+                      smilen = FLAGS.max_smi_len,
+                      need_shuffle = False )
+    # set character set size
+
+    XD, XT, Y = dataset.parse_data(fpath = FLAGS.dataset_path)
+    XD, XT, Y = np.asarray(XD), np.asarray(XT), np.asarray(Y)
+
+    label_row_inds, label_col_inds = np.where(np.isnan(Y)==False)  #basically finds the point address of affinity [x,y]
+
+    if not os.path.exists(figdir):
+        os.makedirs(figdir)
+
+    Y = np.mat(np.copy(Y))
+    train_drugs, train_prots,  train_Y = prepare_interaction_pairs(XD, XT, Y, label_row_inds, label_col_inds)
+
+
+    XD_dtc, XT_dtc, Y_dtc = get_DTC_train(FLAGS.dtc_data_file, FLAGS.max_smi_len, FLAGS.max_seq_len)
+
+    all_train_drugs = np.concatenate((np.asarray(train_drugs), np.asarray(XD_dtc)), axis=0)
+    all_train_prots = np.concatenate((np.asarray(train_prots), np.asarray(XT_dtc)), axis=0)
+    all_train_Y = np.concatenate((np.asarray(train_Y), np.asarray(Y_dtc)), axis=0)
+    all_train_Y = -np.log10(1e-8+all_train_Y/1e9)
+
+    np.random.seed(15)
+    #reduce_inactive_couples = np.concatenate((np.random.choice(np.where(all_train_Y<5)[0], 10000, False), np.where(all_train_Y>=5)[0]))
+    #all_train_drugs, all_train_prots, all_train_Y = all_train_drugs[reduce_inactive_couples], all_train_prots[reduce_inactive_couples],\
+    #                                all_train_Y[reduce_inactive_couples]
+
+    return all_train_drugs, all_train_prots, all_train_Y    
     
 def get_n_fold_by_drugs(all_drugs, n_splits=5):
     unique_drugs = np.unique(all_drugs, axis=0)
