@@ -109,6 +109,7 @@ def build_combined_categorical(FLAGS, NUM_FILTERS, FILTER_LENGTH1, FILTER_LENGTH
 
     ### SMI_EMB_DINMS  FLAGS GELMELII
     encode_smiles = Embedding(input_dim=FLAGS.charsmiset_size+1, output_dim=128, input_length=FLAGS.max_smi_len)(XDinput)
+    encode_smiles = Dropout(0.3)(encode_smiles)
     encode_smiles = Conv1D(filters=NUM_FILTERS, kernel_size=FILTER_LENGTH1,  activation='relu', padding='valid',  strides=1)(encode_smiles)
     encode_smiles = Conv1D(filters=NUM_FILTERS*2, kernel_size=int(FILTER_LENGTH1*1.5),  activation='relu', padding='valid',  strides=1)(encode_smiles)
     encode_smiles = Conv1D(filters=NUM_FILTERS*3, kernel_size=FILTER_LENGTH1*3,  activation='relu', padding='valid',  strides=1)(encode_smiles)
@@ -116,6 +117,7 @@ def build_combined_categorical(FLAGS, NUM_FILTERS, FILTER_LENGTH1, FILTER_LENGTH
     encode_smiles = GlobalMaxPooling1D()(encode_smiles)
 
     encode_protein = Embedding(input_dim=FLAGS.charseqset_size+1, output_dim=128, input_length=FLAGS.max_seq_len)(XTinput)
+    encode_protein = Dropout(0.3)(encode_protein)
     encode_protein = Conv1D(filters=NUM_FILTERS, kernel_size=FILTER_LENGTH2,  activation='relu', padding='valid',  strides=1)(encode_protein)
     encode_protein = Conv1D(filters=NUM_FILTERS*2, kernel_size=FILTER_LENGTH2*2,  activation='relu', padding='valid',  strides=1)(encode_protein)
     encode_protein = Conv1D(filters=NUM_FILTERS*3, kernel_size=FILTER_LENGTH2*3,  activation='relu', padding='valid',  strides=1)(encode_protein)
@@ -129,10 +131,10 @@ def build_combined_categorical(FLAGS, NUM_FILTERS, FILTER_LENGTH1, FILTER_LENGTH
     FC1 = BatchNormalization()(encode_interaction)
     FC1 = Dense(1024, activation='relu')(FC1)
 
-    FC2 = Dropout(0.1)(FC1)
+    FC2 = Dropout(0.5)(FC1)
     FC2 = BatchNormalization()(FC2)
     FC2 = Dense(1024, activation='relu')(FC2)
-    FC2 = Dropout(0.1)(FC2)
+    FC2 = Dropout(0.5)(FC2)
     FC2 = BatchNormalization()(FC2)
     FC2 = Dense(512, activation='relu')(FC2)
 

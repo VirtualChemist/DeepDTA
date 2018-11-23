@@ -136,7 +136,7 @@ class DataSet(object):
     return test_fold, train_folds
 
   def parse_data(self, fpath,  with_label=True): 
-		
+
     print("Read %s start" % fpath)
 
     ligands = json.load(open(fpath+"ligands_can.txt"), object_pairs_hook=OrderedDict)
@@ -165,7 +165,10 @@ class DataSet(object):
 
 def get_DTC_train(data_file, max_smi_len, max_seq_len, with_label=True):
     dtc_train = pd.read_csv(data_file)
-    dtc_train.drop('Unnamed: 0', axis=1, inplace=True)
+    dtc_train.drop('Unnamed: 0', axis=1, inplace=True, errors='ignore')
+    if with_label:
+        dtc_train = dtc_train.groupby(['smiles', 'fasta']).aggregate(np.median).reset_index()
+
     for ind in dtc_train[dtc_train['smiles'].str.contains('\n')].index:
         dtc_train.loc[ind, 'smiles'] = dtc_train.loc[ind, 'smiles'].split('\n')[0]
 
